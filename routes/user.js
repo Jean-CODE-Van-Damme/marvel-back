@@ -4,7 +4,7 @@ const User = require("../models/User");
 const uid2 = require("uid2");
 const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
-
+const isAuthentificated = require("../middleware/isAuthentificated");
 // Route pour s'inscire
 router.post("/user/signup", async (req, res) => {
   try {
@@ -78,10 +78,10 @@ router.post("/user/favorite/character/:characterId", async (req, res) => {
   try {
     // recup  id du charactere favoris et token de l utilisateur connecte
     const { characterId } = req.params;
-    const { tokenCookie, name, description, picture } = req.fields;
+    const { name, description, picture } = req.fields;
 
     // on recherche un utilisateur avec le meme token
-    const userToFind = await User.findOne({ token: tokenCookie });
+    const userToFind = req.User;
 
     let objectFavoriteCharacter = {};
     if (name) {
@@ -121,75 +121,62 @@ router.post("/user/favorite/character/:characterId", async (req, res) => {
   }
 });
 
-router.post("/user/favorite/comic/:comicId", async (req, res) => {
-  try {
-    // recup  id du comic favoris et token de l utilisateur connecte
-    const { comicId } = req.params;
-    const { tokenCookie, title, description, picture } = req.fields;
-
-    // on recherche un utilisateur avec le meme token
-    const userToFind = await User.findOne({ token: tokenCookie });
-
-    let objectFavoriteComic = {};
-    if (title) {
-      objectFavoriteComic.title = title;
-    }
-    if (picture) {
-      objectFavoriteComic.picture = picture;
-    }
-    if (description) {
-      objectFavoriteComic.description = description;
-    }
-
-    objectFavoriteComic.id = comicId;
-
-    let isHere = false;
-    for (let i = 0; i < userToFind.favoritesComicsId.length; i++) {
-      if (objectFavoriteComic.id === userToFind.favoritesComicsId[i].id) {
-        isHere = true;
-        userToFind.favoritesComicsId.splice(i, 1);
+router.post(
+  "/user/favorite/comic/:comicId",
+  isAuthentificated,
+  async (req, res) => {
+    try {
+      // recup  id du comic favoris et token de l utilisateur connecte
+      const { comicId } = req.params;
+      const { title, description, picture } = req.fields;
+      const userToFind = req.User;
+      let objectFavoriteComic = {};
+      if (title) {
+        objectFavoriteComic.title = title;
       }
+      if (picture) {
+        objectFavoriteComic.picture = picture;
+      }
+      if (description) {
+        objectFavoriteComic.description = description;
+      }
+
+      objectFavoriteComic.id = comicId;
+
+      let isHere = false;
+      for (let i = 0; i < userToFind.favoritesComicsId.length; i++) {
+        if (objectFavoriteComic.id === userToFind.favoritesComicsId[i].id) {
+          isHere = true;
+          userToFind.favoritesComicsId.splice(i, 1);
+        }
+      }
+
+      if (isHere === false) {
+        userToFind.favoritesComicsId.push(objectFavoriteComic);
+      }
+
+      console.log("User >>>", userToFind);
+
+      await userToFind.save();
+
+      res.status(200).json(userToFind.favoritesComicsId);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
+  }
+);
 
-    if (isHere === false) {
-      userToFind.favoritesComicsId.push(objectFavoriteComic);
-    }
-
-    console.log("User >>>", userToFind);
-
-    await userToFind.save();
-
-    res.status(200).json(userToFind.favoritesComicsId);
+router.get("/user/favorite/character/", isAuthentificated, async (req, res) => {
+  try {
+    res.status(200).json(req.User.favoritesCharacterId);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-router.get("/user/favorite/character/:tokenCookie", async (req, res) => {
+router.get("/user/favorite/comic/", isAuthentificated, async (req, res) => {
   try {
-    // recup  id du charactere favoris et token de l utilisateur connecte
-
-    const { tokenCookie } = req.params;
-
-    // on recherche un utilisateur avec le meme token
-    const userToFind = await User.findOne({ token: tokenCookie });
-
-    res.status(200).json(userToFind.favoritesCharacterId);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-router.get("/user/favorite/comic/:tokenCookie", async (req, res) => {
-  try {
-    // recup  id du charactere favoris et token de l utilisateur connecte
-
-    const { tokenCookie } = req.params;
-
-    // on recherche un utilisateur avec le meme token
-    const userToFind = await User.findOne({ token: tokenCookie });
-
-    res.status(200).json(userToFind.favoritesComicsId);
+    res.status(200).json(req.User.favoritesComicsId);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
