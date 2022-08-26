@@ -165,4 +165,34 @@ router.post("/user/favorite/comic/:comicId", async (req, res) => {
   }
 });
 
+router.get("/user/favorite/character/:tokenCookie", async (req, res) => {
+  try {
+    // recup  id du charactere favoris et token de l utilisateur connecte
+
+    const { tokenCookie } = req.params;
+
+    // on recherche un utilisateur avec le meme token
+    const userToFind = await User.findOne({ token: tokenCookie });
+
+    res.status(200).json(userToFind.favoritesCharacterId);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+router.get("/user/favorite/comic/:tokenCookie", async (req, res) => {
+  try {
+    // recup  id du charactere favoris et token de l utilisateur connecte
+
+    const { tokenCookie } = req.params;
+
+    // on recherche un utilisateur avec le meme token
+    const userToFind = await User.findOne({ token: tokenCookie });
+
+    res.status(200).json(userToFind.favoritesComicsId);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 module.exports = router;
