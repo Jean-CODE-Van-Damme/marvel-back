@@ -74,52 +74,56 @@ router.post("/user/login", async (req, res) => {
 // Route pour envoyer les id de favoris character au model User si ils n existent pas deja,
 // Sinon les supprimer
 
-router.post("/user/favorite/character/:characterId", async (req, res) => {
-  try {
-    // recup  id du charactere favoris et token de l utilisateur connecte
-    const { characterId } = req.params;
-    const { name, description, picture } = req.fields;
+router.post(
+  "/user/favorite/character/:characterId",
+  isAuthentificated,
+  async (req, res) => {
+    try {
+      // recup  id du charactere favoris et token de l utilisateur connecte
+      const { characterId } = req.params;
+      const { name, description, picture } = req.fields;
 
-    // on recherche un utilisateur avec le meme token
-    const userToFind = req.User;
+      // on recherche un utilisateur avec le meme token
+      const userToFind = req.User;
 
-    let objectFavoriteCharacter = {};
-    if (name) {
-      objectFavoriteCharacter.name = name;
-    }
-    if (picture) {
-      objectFavoriteCharacter.picture = picture;
-    }
-    if (description) {
-      objectFavoriteCharacter.description = description;
-    }
-
-    objectFavoriteCharacter.id = characterId;
-
-    let isHere = false;
-    for (let i = 0; i < userToFind.favoritesCharacterId.length; i++) {
-      if (
-        objectFavoriteCharacter.id === userToFind.favoritesCharacterId[i].id
-      ) {
-        isHere = true;
-        userToFind.favoritesCharacterId.splice(i, 1);
+      let objectFavoriteCharacter = {};
+      if (name) {
+        objectFavoriteCharacter.name = name;
       }
+      if (picture) {
+        objectFavoriteCharacter.picture = picture;
+      }
+      if (description) {
+        objectFavoriteCharacter.description = description;
+      }
+
+      objectFavoriteCharacter.id = characterId;
+
+      let isHere = false;
+      for (let i = 0; i < userToFind.favoritesCharacterId.length; i++) {
+        if (
+          objectFavoriteCharacter.id === userToFind.favoritesCharacterId[i].id
+        ) {
+          isHere = true;
+          userToFind.favoritesCharacterId.splice(i, 1);
+        }
+      }
+
+      if (isHere === false) {
+        userToFind.favoritesCharacterId.push(objectFavoriteCharacter);
+      }
+
+      console.log("User >>>", userToFind);
+
+      await userToFind.save();
+      console.log("tab >>>", userToFind.favoritesCharacterId);
+
+      res.status(200).json(userToFind.favoritesCharacterId);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
-
-    if (isHere === false) {
-      userToFind.favoritesCharacterId.push(objectFavoriteCharacter);
-    }
-
-    console.log("User >>>", userToFind);
-
-    await userToFind.save();
-    console.log("tab >>>", userToFind.favoritesCharacterId);
-
-    res.status(200).json(userToFind.favoritesCharacterId);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
-});
+);
 
 router.post(
   "/user/favorite/comic/:comicId",
